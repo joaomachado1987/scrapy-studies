@@ -13,3 +13,11 @@ class NoticiasItem(scrapy.Item):
     author = scrapy.Field()
     text = scrapy.Field()
     link = scrapy.Field()
+
+class FilmesItem(scrapy.Item):
+    title = scrapy.Field()
+    hora = scrapy.Field()
+    canal = scrapy.Field()
+    sinopse = scrapy.Field()
+    play = scrapy.Field()
+    data=scrapy.Field()

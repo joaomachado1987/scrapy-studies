@@ -66,6 +66,8 @@ ROBOTSTXT_OBEY = True
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'noticias.pipelines.NoticiasPipeline': 300,
+   'noticias.pipelines.TelecinePipeline': 400,
+   'noticias.pipelines.ImdbPipeline': 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

@@ -16,6 +16,32 @@ class NoticiasPipeline(object):
       self.file.close()
 
     def process_item(self, item, spider):
-      line =  json.dumps(dict(item)) + '\n'
+      line =  json.dumps(dict(item), ensure_ascii=False) + '\n'
+      self.file.write(line)
+      return item
+
+class TelecinePipeline(object):
+
+    def open_spider(self, spider):
+      self.file = open('filmes.json', 'w')
+
+    def close_spider(self, spider):
+      self.file.close()
+
+    def process_item(self, item, spider):
+      line =  json.dumps(dict(item), ensure_ascii=False) + '\n'
+      self.file.write(line)
+      return item
+
+class ImdbPipeline(object):
+
+    def open_spider(self, spider):
+      self.file = open('imdb.json', 'w')
+
+    def close_spider(self, spider):
+      self.file.close()
+
+    def process_item(self, item, spider):
+      line =  json.dumps(dict(item), ensure_ascii=False) + '\n'
       self.file.write(line)
       return item
