@@ -5,7 +5,7 @@ from time import gmtime, strftime
 import json
 import datetime
 import time
-
+import noticias.modules.parse_grade
 from noticias.items import FilmesItem
 
 class TecnoblogSpider(scrapy.Spider):
@@ -14,43 +14,32 @@ class TecnoblogSpider(scrapy.Spider):
     start_urls = ['http://telecine.globo.com/programacao/']
 
     def parse(self, response):
-      # for section in response.css("section.clearfix.cl"):
-      #   title = section.css("ul li strong a::attr(title)").extract_first()
-      #   hora = section.css("span.horario-grade ::text").extract_first()
-      #   canal = section.css("li.canal.clearfix figure img::attr(title)").extract_first()
-      #   sinopse = section.css("p.sinopse ::text").extract_first()
-      #
-      #   # print("###############################################")
-      #   # print(title)
-      #   # print(hora)
-      #   # print(canal)
-      #   # print(sinopse)
-      #   # print("###############################################")
-      #
-      #   yield FilmesItem(title=title, hora=hora, canal=canal, sinopse=sinopse)
 
-      for link in response.css('li.aba_dia::attr(data-href)').extract():
-          print("###########################")
-          print(link)
-          request = scrapy.Request(link, callback=self.parse_grade)
-          yield request
+      # for link in response.css('li.aba_dia::attr(data-href)').extract():
+      #     print("###########################")
+      #     print(link)
+      #     request = scrapy.Request(link, callback=self.parse_filmes)
+      #     yield request
+      link = "http://telecine.img.estaticos.tv.br/rendered/static/grade_htmls/19_07_2018.html"
+      request = scrapy.Request(link, callback=self.parse_filmes)
+      yield request
 
-    def parse_grade(self, response):
-
+    def parse_filmes(self, response):
         ia = imdb.IMDb()
         errors = []
         print("--------------INICIO-------------------")
         url = response.url.split('/')[-1:]
 
-        data = url[0].strip('.html').replace('_','/')
+        data = url[0].strip('.html').replace('_', '/')
         data_now = strftime('%d/%m/%Y', gmtime())
 
-        print(data)
-        print(data_now)
+        # print(data)
+        # print(data_now)
         data = time.strptime(data, "%d/%m/%Y")
         data_now = time.strptime(data_now, "%d/%m/%Y")
-        print(data>=data_now)
-        if data>=data_now:
+        # print(data >= data_now)
+
+        if data >= data_now:
             print("--------------FIM-------------------")
             for section in response.css("section.clearfix"):
 
@@ -63,77 +52,120 @@ class TecnoblogSpider(scrapy.Spider):
                     sinopse = li.css("article p.sinopse ::text").extract()
                     canal = li.css("::attr(data-canal)").extract()
                     play = li.css(".box-assista-no-play").extract()
+                    href = li.css("article strong a::attr(href)").extract()
+                    link = "http://telecine.globo.com" + str(href[0])
+
+                    print(link)
+
+                    request = scrapy.Request(link, callback=self.parse_filme)
+
+                    yield request
+
+
+    def parse_filme(self,response):
+
+        filmes_errors = []
+
+        titulo = response.css('hgroup h1 ::text').extract()
+        titulo_original = response.css('hgroup h2 ::text').extract()
+        faixa_etaria=response.css('span.cl-etaria ::text')[0].extract().replace('\n','').strip()
+        genero=response.css('div.ficha-tecnica a ::text').extract()
+        sinopse=response.css('div.box-sinopse p ::text')[1].extract()
+        duracao,ano_lancamento,nacionalidade=response.css('div.ficha-tecnica p ::text')[0].extract().split('-')
+
+
+        try:
+            print( " ************** BOM " + titulo_original[0])
+            titulo_original = titulo_original[0]
+        except:
+            print(" ************** RUIM" + titulo[0])
+            titulo_original = titulo[0]
+            print("Novo titulo original: " + titulo_original)
+
+
+        ia = imdb.IMDb()
+        movies = ia.search_movie(titulo_original)
+
+        for filme in movies:
+            dict_imdb = {}
+            try:
+                print("%%%")
+                print(filme.data)
+                print(str(ano_lancamento).strip())
+                print(str(ano_lancamento).strip() == str(ano_lancamento))
+
+                year = ""
+                kind = ""
+
+                try:
+                    kind = filme.data['kind']
+                    print("kind:" + kind)
+                    year = str(filme.data['year'])
+                    print("year:" + year)
+                except:
+                    print("No year or kind to filme: " + filme)
+
+                if(year == str(ano_lancamento).strip() and (kind == "movie" or kind == 'video movie' or kind == 'tv movie')):
+
+                    id = filme.getID()
+
+                    movie = ia.get_movie(id)
+
+                    elenco = []
+                    diretores = []
 
                     try:
-                        movies = ia.search_movie(str(title))
-                        first_movie = movies[0]
-                        id = first_movie.getID()
-
-                        movie = ia.get_movie(id)
-
-                        elenco = []
-                        diretores = []
-
                         cast = movie.data['cast'][:3]
-                        directors = movie.data['directors']
-                        year = movie.data['year']
-                        rating = movie.data['rating']
-                        # writer = movie.data['writer']
-                        genres = movie.data['genres']
-
-                        print(cast)
-
-                        for person in cast:
-                            cast_dict = {}
-                            id = person.getID()
-                            name = person.data['name']
-                            cast_dict['name'] = name
-                            cast_dict['id'] = id
-                            print(cast_dict)
-                            elenco.append(cast_dict)
-
-                        for person in directors:
-                            cast_dict = {}
-                            id = person.getID()
-                            name = person.data['name']
-                            cast_dict['name'] = name
-                            cast_dict['id'] = id
-                            print(cast_dict)
-                            diretores.append(cast_dict)
-
-                        print(elenco)
-                        print(title)
-                        print(sinopse)
-                        print(canal)
-                        print(play)
-                        print(data)
-                        print(elenco)
-                        print(diretores)
-                        print(year)
-                        print(rating)
-                        # print(writer)
-                        print(genres)
-
-                        yield FilmesItem(title=title,
-                                         hora=horario,
-                                         canal=canal,
-                                         sinopse=sinopse,
-                                         play=play,
-                                         data=data,
-                                         cast=elenco,
-                                         directors=diretores,
-                                         year=year,
-                                         rating=rating,
-                                         # writer = writer,
-                                         genres = genres
-                                            )
                     except:
-                        print(" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ")
-                        errors.append(str(title))
-                        print(errors)
-                        print(" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ")
+                        cast=[]
 
-                    print("*****************************")
+                    try:
+                        directors = movie.data['directors']
+                    except:
+                        diretores=[]
+                    try:
+                        rating = movie.data['rating']
+                    except:
+                        rating='-'
 
-            with open("errors-" + str(datetime.datetime.now()).replace(':','-') + ".txt", "w") as file:
-                json.dump(errors, file, ensure_ascii=False)
+                    for person in cast[:5]:
+                        cast_dict = {}
+                        id = person.getID()
+                        name = person.data['name']
+                        cast_dict['name'] = name
+                        cast_dict['id'] = id
+                        elenco.append(cast_dict)
+
+                    for person in directors:
+                        cast_dict = {}
+                        id = person.getID()
+                        name = person.data['name']
+                        cast_dict['name'] = name
+                        cast_dict['id'] = id
+                        diretores.append(cast_dict)
+
+                    dict_imdb = {
+                        "rating": rating,
+                        "diretores": diretores,
+                        "elenco": elenco
+                    }
+
+                    print(dict_imdb)
+
+                    break
+            except:
+                print("error dump: " + titulo[0].strip())
+
+        dict_filmes = {
+            "titulo": titulo[0].strip(),
+            "titulo_original": titulo_original.strip(),
+            "faixa_etaria": faixa_etaria.strip(),
+            "genero": genero,
+            "sinopse":sinopse.strip(),
+            "duracao":duracao.strip(),
+            "ano_lancamento":ano_lancamento.strip(),
+            "nacionalidade":nacionalidade.strip(),
+            "dict_imdb":dict_imdb
+        }
+
+        yield dict_filmes
