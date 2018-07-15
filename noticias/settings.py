@@ -71,7 +71,9 @@ ITEM_PIPELINES = {
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
 MONGODB_DB = "Telecine"
-MONGODB_COLLECTION = "filmes"
+MONGODB_COLLECTION_PROGRAMACAO = "programacao"
+MONGODB_COLLECTION_IMDB = "imdb"
+MONGODB_COLLECTION_TELECINE = "filmes"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
